@@ -1,0 +1,52 @@
+# Self-hosted comparison platforms, each capped to roughly match CognoDB's
+# free-tier spec (0.5 vCPU / 256MB RAM / 1GB disk) for a fair comparison.
+# Document any platform that cannot be capped this low in the README caveats
+# (e.g. JanusGraph's JVM has a practical minimum heap).
+
+version: "3.8"
+
+services:
+  memgraph:
+    image: memgraph/memgraph:2.18.1
+    ports:
+      - "7688:7687"
+    command: ["--memory-limit=256"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    volumes:
+      - memgraph_data:/var/lib/memgraph
+
+  arangodb:
+    image: arangodb:3.11.9
+    ports:
+      - "8529:8529"
+    environment:
+      ARANGO_ROOT_PASSWORD: ${ARANGO_PASSWORD:-changeme}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    volumes:
+      - arango_data:/var/lib/arangodb3
+
+  janusgraph:
+    image: janusgraph/janusgraph:1.0.0
+    ports:
+      - "8182:8182"
+    environment:
+      # JanusGraph/JVM needs a minimum heap to boot; document this deviation
+      # in the README as a fairness caveat rather than hiding it.
+      JAVA_OPTIONS: "-Xms256m -Xmx256m"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+volumes:
+  memgraph_data:
+  arango_data:
