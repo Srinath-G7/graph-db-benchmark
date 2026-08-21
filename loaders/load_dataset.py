@@ -35,7 +35,13 @@ def read_edges(path):
 
 def load_bolt(client, edges_path):
     """Cypher UNWIND batch insert -- works unchanged for CognoDB, Neo4j, Memgraph."""
-    client.run_cypher("CREATE INDEX node_id_idx IF NOT EXISTS FOR (n:Node) ON (n.id)")
+    try:
+        client.run_cypher("CREATE INDEX node_id_idx IF NOT EXISTS FOR (n:Node) ON (n.id)")
+    except Exception:
+        try:
+            client.run_cypher("CREATE INDEX ON :Node(id)")
+        except Exception as e:
+            print(f"[warn] index creation skipped: {e}")
     batch = []
     node_count, edge_count = set(), 0
     for src, dst in read_edges(edges_path):
@@ -69,7 +75,6 @@ def load_arango(client, edges_path):
         client.db.create_collection("nodes")
     if not client.db.has_collection("edges"):
         client.db.create_collection("edges", edge=True)
-    client.db.collection("nodes").add_hash_index(fields=["node_id"], unique=True)
 
     batch_nodes, batch_edges = {}, []
     node_count, edge_count = set(), 0
@@ -86,6 +91,7 @@ def load_arango(client, edges_path):
     if batch_edges:
         _flush_arango_batch(client, batch_nodes, batch_edges)
         edge_count += len(batch_edges)
+    client.db.collection("nodes").add_hash_index(fields=["node_id"], unique=True)
     return len(node_count), edge_count
 
 

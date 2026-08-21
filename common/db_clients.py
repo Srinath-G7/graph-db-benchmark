@@ -50,8 +50,9 @@ class ArangoClient:
 class JanusGraphClient:
     def __init__(self, url):
         from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
+        from gremlin_python.driver.serializer import GraphSONSerializersV3d0
         from gremlin_python.process.anonymous_traversal import traversal
-        self._conn = DriverRemoteConnection(url, "g")
+        self._conn = DriverRemoteConnection(url, "g", message_serializer=GraphSONSerializersV3d0())
         self.g = traversal().withRemote(self._conn)
 
     def run_gremlin(self, traversal_fn):

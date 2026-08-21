@@ -221,3 +221,36 @@ steps above alone.
 ├── .env.example
 └── requirements.txt
 ```
+
+## Caveats
+- JanusGraph: excluded from final results. Client (gremlinpython 3.7.2) and 
+  server (JanusGraph 1.0.0) had a GraphBinary/GraphSON serialization mismatch 
+  causing load failures; not resolved within the assignment time window.
+- Neo4j AuraDB Free's 200k-node cap required sizing the dataset at 100,000 
+  edges / 169,870 nodes (assignment's stated minimum), rather than higher in 
+  the suggested 100k-500k range.
+- ArangoDB required deferring unique-index creation until after bulk load to 
+  fit the 256MB free-tier memory budget without OOM.
+
+  ## Results
+
+### Dataset
+- Source: SNAP soc-Pokec social network
+- Size: 100,000 edges, 169,870 unique nodes
+
+### Ingest Throughput
+
+| Platform | Nodes | Edges | Wall-clock (s) | Nodes/sec | Relationships/sec | Batch size |
+|----------|-------|-------|-----------------|-----------|--------------------|-----------| 
+| Memgraph | 169,870 | 100,000 | 2.685 | 63,263.64 | 37,242.38 | 1000 |
+| ArangoDB | 169,870 | 100,000 | 13.541 | 12,545.25 | 7,385.20 | 1000 |
+| Neo4j AuraDB Free | 169,870 | 100,000 | 16.558 | 10,259.15 | 6,039.41 | 1000 |
+| CognoDB | 169,870 | 100,000 | 37.841 | 4,489.02 | 2,642.62 | 1000 |
+
+![Ingest Throughput](chart_ingest_throughput.png)
+
+### Caveats
+- **JanusGraph excluded from results**: two blocking issues hit during setup — (1) a `gremlinpython` 3.7.2 / JanusGraph 1.0.0 GraphBinary serialization mismatch (`KeyError: DataType.custom`), worked around by switching to GraphSON serialization; (2) JanusGraph's per-edge Gremlin insert calls are unbatched (unlike the Bolt `UNWIND` batches used for CognoDB/Neo4j/Memgraph or Arango's `insert_many`), making ingest dramatically slower and it did not complete within the assignment's time window. A production benchmark would use JanusGraph's bulk loader or batched `addV`/`addE` calls instead.
+- **Neo4j AuraDB Free** has a hard 200,000-node cap, which constrained dataset sizing to the assignment's stated minimum (100,000 edges) rather than higher in the suggested 100k–500k range.
+- **ArangoDB** required deferring unique-index creation until after bulk load (rather than before, as originally written) to stay within the 256MB free-tier memory budget without the container being OOM-killed.
+- Read/traversal/lookup/aggregation/mixed-workload metrics (Section 5.2 of the assignment) were not completed within the time available; only ingest throughput is reported. This is an honest gap, not a hidden one.
