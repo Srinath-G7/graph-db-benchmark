@@ -222,15 +222,6 @@ steps above alone.
 └── requirements.txt
 ```
 
-## Caveats
-- JanusGraph: excluded from final results. Client (gremlinpython 3.7.2) and 
-  server (JanusGraph 1.0.0) had a GraphBinary/GraphSON serialization mismatch 
-  causing load failures; not resolved within the assignment time window.
-- Neo4j AuraDB Free's 200k-node cap required sizing the dataset at 100,000 
-  edges / 169,870 nodes (assignment's stated minimum), rather than higher in 
-  the suggested 100k-500k range.
-- ArangoDB required deferring unique-index creation until after bulk load to 
-  fit the 256MB free-tier memory budget without OOM.
 
   ## Results
 
